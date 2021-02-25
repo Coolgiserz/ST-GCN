@@ -2,6 +2,14 @@ import os
 import zipfile
 import numpy as np
 import torch
+
+class TrafficData():
+    def __init__(self, A, X, means, stds):
+        self.A = A
+        self.X = X
+        self.means = means
+        self.stds = stds
+
 def load_pems_m_data():
     print("Try loading PeMS-M...")
     if (not os.path.isfile("data/PeMS-M/W_228.csv")
@@ -19,7 +27,7 @@ def load_pems_m_data():
     stds = np.std(X, axis=(0, 2))
     X = X / stds.reshape(1, -1, 1)
 
-    return A, X, means, stds
+    return TrafficData(A, X, means, stds)
 
 
 def load_metr_la_data():
@@ -38,7 +46,7 @@ def load_metr_la_data():
     stds = np.std(X, axis=(0, 2))
     X = X / stds.reshape(1, -1, 1)
 
-    return A, X, means, stds
+    return TrafficData(A, X, means, stds)
 
 
 def get_normalized_adj(A):
