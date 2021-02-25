@@ -22,8 +22,8 @@ class Trainer():
         torch.manual_seed(7)
         self.resume = resume
         self.device = device
-
-        self.init_routes()
+        if not self.resume:
+            self.init_routes()
         # Training params
         self.start_epoch = 0
         self.num_timesteps_input = 12
@@ -44,6 +44,8 @@ class Trainer():
         # Eval measures
         self.best_mae = 10000
         self.best_loss = 10000
+
+
 
 
 
@@ -87,15 +89,36 @@ class Trainer():
         os.mkdir(os.path.join(basename, 'graphs'))
 
     def resume_weight(self):
-        pass
+        last_weight = 'result/weights/last.pt'
+        chkpt = torch.load(last_weight, map_location=self.device)
 
-    def save_checkpoint(self):
-        pass
+        self.model.load_state_dict(chkpt['model'])
+
+        self.start_epoch = chkpt['epoch'] + 1
+        if chkpt['optimizer'] is not None:
+            self.optimizer.load_state_dict(chkpt['optimizer'])
+            self.best_mae = chkpt['best_mae']
+        del chkpt
+
+        print("resume model weights from : {}".format(last_weight))
+
+    def save_checkpoint(self, state, is_best=False):
+        torch.save(state,'result/weights/last.pt')
+        if is_best:
+            torch.save({
+                "epoch": state["epoch"],
+                # "best_loss": self.best_loss,
+                "best_mae": self.best_mae,
+                "model": self.model,
+                "optimizer": self.optimizer
+            }, 'result/weights/best.pt')
+
 
     def run(self):
         self.load_data()
         print("==PROCESS DATA FINISHED: A_wave-{0}".format(self.A_wave.shape))
         print("DEFINE MODEL")
+
         self.model = STGCN(self.A_wave.shape[0],
                     self.training_input.shape[3],
                     self.num_timesteps_input,
@@ -103,14 +126,15 @@ class Trainer():
 
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=1e-3, weight_decay=0.0005)
         self.loss_criterion = nn.MSELoss()
-
+        if self.resume:
+            self.resume_weight()
         training_losses = []
         validation_losses = []
         validation_maes = []
         validation_rmse = []
         validation_r2 = []
         print("BEGIN TRAINING")
-        for epoch in range(self.epochs):
+        for epoch in range(self.start_epoch, self.epochs):
             print("Epoch: {}".format(epoch))
             loss = self.train_epoch(epoch, self.training_input, self.training_target,
                                batch_size=self.batch_size)
@@ -146,17 +170,25 @@ class Trainer():
             self.summary.writer.add_scalar("val/mae", validation_maes[-1], epoch)
             self.summary.writer.add_scalar("val/rmse", rmse, epoch)
             self.summary.writer.add_scalar("val/R2", r2, epoch)
-            # plt.plot(training_losses, label="training loss")
-            # plt.plot(validation_losses, label="validation loss")
-            # plt.legend()
-            # plt.show()
 
             checkpoint_path = "checkpoints/"
             if not os.path.exists(checkpoint_path):
                 os.makedirs(checkpoint_path)
             with open("checkpoints/losses.pk", "wb") as fd:
                 pk.dump((training_losses, validation_losses, validation_maes), fd)
+            self.save_checkpoint({
+                    "model": self.model.state_dict(),
+                    "optimizer": self.optimizer.state_dict(),
+                    "epoch": epoch,
 
+                })
+            if(mae < self.best_mae):
+                self.save_checkpoint({
+                    "model": self.model.state_dict(),
+                    "optimizer": self.optimizer.state_dict(),
+                    "epoch": epoch,
+                    "best_mae": mae
+                }, is_best=True)
 
     def train_epoch(self, epoch, training_input, training_target, batch_size):
         """
@@ -198,9 +230,11 @@ class Trainer():
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='STGCN')
+    parser.add_argument('--resume', action='store_true', default=True,
+                        help='Enable CUDA')
     parser.add_argument('--enable-cuda', action='store_true', default=True,
                         help='Enable CUDA')
-    parser.add_argument('--weight-path', type=str, default='result/weights/lastmodel.pt',
+    parser.add_argument('--weight-path', type=str, default='result/weights/last.pt',
                         help='Weight path')
     parser.add_argument('--batch-size', type=int, default=64,
                         help='Batch size')
@@ -214,12 +248,10 @@ if __name__ == '__main__':
         args.device = torch.device('cpu')
 
     Trainer(
-        resume=False,
+        resume=args.resume,
         device=args.device,
         weight_path=args.weight_path,
         batch_size=args.batch_size,
         dataset='melr'
-
-
     ).run()
 
