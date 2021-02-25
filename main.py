@@ -18,7 +18,7 @@ use_gpu = False
 
 
 class Trainer():
-    def __init__(self, resume, device, weight_path, batch_size, dataset):
+    def __init__(self, resume, device, weight_path, batch_size, dataset, epochs):
         torch.manual_seed(7)
         self.resume = resume
         self.device = device
@@ -29,8 +29,8 @@ class Trainer():
         self.num_timesteps_input = 12
         self.num_timesteps_output = 3
 
-        self.epochs = 1000
-        self.batch_size = 50
+        self.epochs = epochs
+        self.batch_size = batch_size
 
         # Tools
         self.summary = TensorboardSummary(os.path.join('result', 'events'))
@@ -166,6 +166,9 @@ class Trainer():
             print("Training loss: {}".format(training_losses[-1]))
             print("Validation loss: {}".format(validation_losses[-1]))
             print("Validation MAE: {}".format(validation_maes[-1]))
+            print("Training RMSE: {}".format(validation_rmse[-1]))
+            print("Validation R2: {}".format(validation_r2[-1]))
+
             self.summary.writer.add_scalar("val/loss", loss, epoch)
             self.summary.writer.add_scalar("val/mae", validation_maes[-1], epoch)
             self.summary.writer.add_scalar("val/rmse", rmse, epoch)
@@ -175,7 +178,7 @@ class Trainer():
             if not os.path.exists(checkpoint_path):
                 os.makedirs(checkpoint_path)
             with open("checkpoints/losses.pk", "wb") as fd:
-                pk.dump((training_losses, validation_losses, validation_maes), fd)
+                pk.dump((training_losses, validation_losses, validation_maes, validation_rmse, validation_r2), fd)
             self.save_checkpoint({
                     "model": self.model.state_dict(),
                     "optimizer": self.optimizer.state_dict(),
@@ -230,8 +233,10 @@ class Trainer():
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='STGCN')
-    parser.add_argument('--resume', action='store_true', default=True,
-                        help='Enable CUDA')
+    parser.add_argument('--resume', action='store_true', default=False,
+                        help='resume training')
+    parser.add_argument('--epochs', type=int, default=1000,
+                        help='Epochs')
     parser.add_argument('--enable-cuda', action='store_true', default=True,
                         help='Enable CUDA')
     parser.add_argument('--weight-path', type=str, default='result/weights/last.pt',
@@ -252,6 +257,7 @@ if __name__ == '__main__':
         device=args.device,
         weight_path=args.weight_path,
         batch_size=args.batch_size,
-        dataset='melr'
+        dataset='melr',
+        epochs=args.epochs
     ).run()
 
