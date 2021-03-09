@@ -20,7 +20,7 @@ def load_pems_m_data():
     A = np.loadtxt("data/PeMS-M/W_228.csv",delimiter=",")
     X = np.loadtxt("data/PeMS-M/V_228.csv",delimiter=",")#.transpose((1, 2, 0))
     X = X.astype(np.float32)
-
+    print(X.shape)
     # Normalization using Z-score method
     means = np.mean(X, axis=(0, 2))
     X = X - means.reshape(1, -1, 1)

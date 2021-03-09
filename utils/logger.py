@@ -7,6 +7,9 @@ import os
 
 
 class Logger(object):
+    """
+    TODO:
+    """
     def __init__(self, logPath, use_console=False):
         """
         initial
