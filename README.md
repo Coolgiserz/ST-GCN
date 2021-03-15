@@ -3,7 +3,6 @@ This repos intergrate the popular models for spatail-temporal prediction, such a
 - ST-GCN
 - Graph-WaveNet
 
-PyTorch implementation of the spatio-temporal graph convolutional network proposed in [Spatio-Temporal Graph Convolutional Networks: A Deep Learning Framework for Traffic Forecasting](https://arxiv.org/abs/1709.04875) by Bing Yu, Haoteng Yin, Zhanxing Zhu. An example for traffic forecasting is included in this repository.
 
  ## Requirements
   
@@ -22,4 +21,5 @@ PyTorch implementation of the spatio-temporal graph convolutional network propos
 - logger
 
 ## References
-
+- https://github.com/FelixOpolka/STGCN-PyTorch
+- https://github.com/nnzhan/Graph-WaveNet
