@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 
 from models.stgcn import STGCN
-from utils.utils import generate_dataset, load_metr_la_data, get_normalized_adj,load_pems_m_data
+from utils.utils import generate_dataset, get_normalized_adj, load_metr_la_data, load_pems_m_data
 
 from sklearn.metrics import mean_squared_error, r2_score, mean_absolute_error
 from utils.summary import TensorboardSummary
